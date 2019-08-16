@@ -1,0 +1,191 @@
+---
+title: "Reading and data wranging R"
+author: "Andrea Marcela Huerfano Barbosa"
+date: "August 14, 2019"
+output: pdf_document
+---
+
+# Description
+In this file you can find some tips to:
+
+* Reading data from different formats (txt,csv,excel...)
+* Cleaning data
+* Creation of new variables
+* Merging datasets
+* Dealing with NA
+
+All of the task above are related with how to clean and tidy our data, that is an inevitable phase when you work with data. Some terms for these activities are: data cleaning, data wrangling and data manipulation. 
+
+## 1. Reading data
+There are many ways to import datasets depending on the file characteristics as separator, decimals, head, etc. The easy way is using the botton Import Dataset in the R-Studio enviroment, however you have to copy the code into your script because the lines just run in the console. To know some of the fuctions that appear throw the bottom you are going to find some examples.
+
+* read.csv:  comma separated values with period as decimal separator.
+* read.csv2: semicolon separated values with comma as decimal separator.
+* read.delim: tab-delimited files with period as decimal separator.
+* read.delim2 tab-delimited files with comma as decimal separator.
+* read.fwf data with a predetermined number of bytes per column.
+
+```{r}
+pigeon <-  read.delim("C:/Users/Andrea/Desktop/pigeon-racing.txt") 
+str(pigeon)
+```
+
+### excel
+The functions explained above don't require intallation of any library because they are in the R core, however to read excel files it is necesary to load the library readxl
+```{r message=FALSE, warning=FALSE}
+library(readxl)
+spanish_silver <- read_excel("C:/Users/Andrea/Desktop/spanish-silver.xls", 
+    sheet = "spanish-silver")
+```
+
+
+### website
+***
+
+#### Subsets
+
+##### Tibble
+In all of the examples above the data were loaded as data_frame. However to display a sample of them and their visualization is more easy when the data is convert into a tibble
+
+```{r, message=FALSE, warning=FALSE}
+library(tibble)
+pigeon_tb <- as_data_frame(pigeon)
+pigeon_tb
+```
+
+This sort of view is obteined directly into the original dataframe with the function head.
+
+```{r}
+head(pigeon, n=4)
+```
+In this script most of the data will be used in tibbles.
+
+##### Sampling
+After loaded the dataset is useful sampling to know their data and identify steps to clean them.
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+pigeon_tb%>%sample_n(4)
+```
+Extracting a percentage in the data set
+```{r}
+pigeon_tb%>%sample_frac(0.03, replace=FALSE)
+```
+
+##### Selecting columns
+```{r}
+pigeon_tb%>%select(Pigeon, Color, Sex)
+```
+##### Filters
+
+* And &
+* Or |
+```{r}
+pigeon_tb%>%filter(Color=='BB'  | Sex=='H')
+```
+
+
+```{r}
+pigeon_tb%>%filter(Color=='BB'  & Sex=='H')
+```
+
+##### Order by
+The "-" makes the order from the grearest to the shortest.
+```{r}
+pigeon_tb%>%arrange(-Speed)
+```
+
+
+## 2.Cleaning data
+### Creation of new variables
+#### Split
+Split a string by an specific separator
+```{r}
+library(dplyr)
+library(tidyr)
+pigeon_tb%>%separate(Pigeon, sep='-', c('Num', 'id', 'det'))
+ 
+```
+#### Concatenate 
+
+```{r}
+pigeon_tb%>%unite_('new', c('Pos','Sex'), sep = '-')
+```
+#### Variable type conversion
+Supose that Ent is a factor variable not a numeric one.
+```{r}
+pigeon_tb$Ent<- as.factor(pigeon_tb$Ent)
+pigeon_tb
+```
+if the variable is as string to convert them type into numeric the function is as.numeric()
+
+## 4. Merging datasets
+It's common that you have to merge many files to obtain your final dataset. In R at the same that Python you need to have the same colname in the key variable.
+
+### Joins
+R has the SQL functions to join files, the key to join the data sets must have the same name in the files.
+
+```{r}
+library(readxl)
+athlete_country <- read_excel("C:/Users/Andrea/Desktop/python-ml-course-master/datasets/athletes/athlete.xls", 
+    sheet = "Athelete_Country_Map")
+
+athlete_sport <- read_excel("C:/Users/Andrea/Desktop/python-ml-course-master/datasets/athletes/athlete.xls", 
+    sheet = "Athelete")
+
+athlete_country
+athlete_sport
+```
+For this example the key is the column called 'Athlete'
+```{r}
+inner_join(athlete_country, athlete_sport, by='Athlete')
+```
+
+the structure to reproduce left and right join is the same that the example above.
+
+## 5. Dealing with NA
+
+Counting the na values
+```{r}
+sapply(pigeon_tb, function(x) sum(is.na(x)))
+```
+
+This is weird especially when I new that in name there are too many rows in blank, then one of the levels of the variable must be ""
+```{r}
+levels(pigeon_tb$Name)
+```
+The level "" is defining as NA 
+```{r}
+levels(pigeon_tb$Name)[levels(pigeon_tb$Name)==""]<-NA
+levels(pigeon_tb$Name)
+pigeon_tb
+```
+
+## References 
+Van der Loo, M. and De Jonge, E. (2013) An introduction to data cleaning with R. https://cran.r-project.org/doc/contrib/de_Jonge+van_der_Loo-Introduction_to_data_cleaning_with_R.pdf
+
+ Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2019). dplyr: A Grammar of
+  Data Manipulation. R package version 0.8.3. https://CRAN.R-project.org/package=dplyr
+
+  Hadley Wickham and Lionel Henry (2019). tidyr: Easily Tidy Data with 'spread()' and
+  'gather()' Functions. R package version 0.8.3. https://CRAN.R-project.org/package=tidyr
+  
+  Kirill Müller and Hadley Wickham (2019). tibble: Simple Data Frames. R package version 2.1.3.
+  https://CRAN.R-project.org/package=tibble
+  
+    Hadley Wickham and Jennifer Bryan (2019). readxl: Read Excel Files. R package version 1.3.1.
+  https://CRAN.R-project.org/package=readxl
+  
+  Hadley Wickham (2017). tidyverse: Easily Install and Load the 'Tidyverse'. R package version
+  1.2.1. https://CRAN.R-project.org/package=tidyverse
+
+```{r, include=FALSE}
+citation("dplyr")
+citation("tidyr")
+citation("tibble")
+citation("readxl")
+citation("tidyverse")
+```
+
+
+## Usefull resources
+* Presentation data cleaning Jonge. https://www.r-project.ro/conference2017/presentations/uRos2017_data-cleaning-workshop.pdf
