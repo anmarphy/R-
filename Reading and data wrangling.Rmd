@@ -258,6 +258,10 @@ Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2019). dplyr: A
   
   Hadley Wickham (2017). tidyverse: Easily Install and Load the 'Tidyverse'. R package version
   1.2.1. https://CRAN.R-project.org/package=tidyverse
+ 
+  Henrik Bengtsson (2019). R.utils: Various Programming Utilities. R package version 2.9.0.
+  https://CRAN.R-project.org/package=R.utils
+
 
 
 
@@ -267,7 +271,7 @@ citation("tidyr")
 citation("tibble")
 citation("tidyverse")
 citation("readxl")
-
+citation('R.utils')
 ```
 
 
