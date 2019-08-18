@@ -1,12 +1,12 @@
 ---
 title: "Reading and data wrangling in R"
 author: "Andrea Marcela Huerfano Barbosa"
-date: "August 14, 2019"
+date: "August 5th, 2019"
 output: pdf_document
 ---
 
 # Description
-In this file you can find some tips to:
+In this file, you can find some tips for:
 
 * Reading data from different formats (txt,csv,excel...)
 * Cleaning data
@@ -14,14 +14,13 @@ In this file you can find some tips to:
 * Merging datasets
 * Dealing with NA
 
-All of the task above are related with how to clean and tidy our data, that is an inevitable phase when you work with data. Some terms for these activities are: data cleaning, data wrangling and data manipulation. 
-
+All of the tasks above are related to how to clean and tidy our data, that is an inevitable phase when you work with data. Some terms for these activities are data cleaning, data wrangling, and data manipulation. 
 ## 1. Reading data
-There are many ways to import datasets depending on the file characteristics as separator, decimals, head, etc. The easy way is using the botton Import Dataset in the R-Studio enviroment, however you have to copy the code into your script because the lines just run in the console. To know some of the fuctions that appear throw the bottom you are going to find some examples.
+There are many ways to import datasets depending on the file characteristics as the separator, decimals, head, etc. The easy way is using the button Import Dataset in the R-Studio environment, however, you have to copy the code into your script because the lines just run in the console. To know some of the functions that appear throw the bottom you are going to find some examples.
 
-* read.csv:  comma separated values with period as decimal separator.
-* read.csv2: semicolon separated values with comma as decimal separator.
-* read.delim: tab-delimited files with period as decimal separator.
+* read.csv:  comma-separated values with the period as decimal separator.
+* read.csv2: semicolon-separated values with comma as decimal separator.
+* read.delim: tab-delimited files with the period as decimal separator.
 * read.delim2 tab-delimited files with comma as decimal separator.
 * read.fwf data with a predetermined number of bytes per column.
 
@@ -38,7 +37,7 @@ summary(pigeon)
 ```
 
 ### excel
-The functions explained above don't require intallation of any library because they are in the R core, however to read excel files it is necesary to load the library readxl
+The functions explained above don't require installation of any library because they are in the R core, however, to read excel files it is necessary to load the library readxl.
 ```{r message=FALSE, warning=FALSE}
 library(readxl)
 spanish_silver <- read_excel("C:/Users/Andrea/Desktop/spanish-silver.xls", 
@@ -47,12 +46,17 @@ spanish_silver <- read_excel("C:/Users/Andrea/Desktop/spanish-silver.xls",
 
 
 ### website
-***
+```{r}
+df <- read.table("https://s3.amazonaws.com/assets.datacamp.com/blog_assets/test.txt", 
+                 header = FALSE)
+df
+```
+
 
 #### Subsets
 
 ##### Tibble
-In all of the examples above the data were loaded as data_frame. However to display a sample of them and their visualization is more easy when the data is convert into a tibble
+In all of the examples above the data were loaded as data_frame. However, to display a sample of them and their visualization is easier when the data is converted into a tibble.
 
 ```{r, message=FALSE, warning=FALSE}
 library(tibble)
@@ -60,7 +64,7 @@ pigeon_tb <- as_data_frame(pigeon)
 pigeon_tb
 ```
 
-This sort of view is obteined directly into the original dataframe with the function head.
+This sort of view is obtained directly into the original dataframe with the function head.
 
 ```{r}
 head(pigeon, n=4)
@@ -68,7 +72,7 @@ head(pigeon, n=4)
 In this script most of the data will be used in tibbles.
 
 ##### Sampling
-After loaded the dataset is useful sampling to know their data and identify steps to clean them.
+After loading the dataset is useful sampling to know their data and identify steps to clean them.
 ```{r, message=FALSE, warning=FALSE}
 library(dplyr)
 pigeon_tb%>%sample_n(4)
@@ -111,7 +115,7 @@ pigeon_tb%>%mutate(NewSpeed=Speed/2)
 
 
 #### Split
-Split a string by an specific separator
+Split a string by an specific separator.
 ```{r}
 library(dplyr)
 library(tidyr)
@@ -146,10 +150,9 @@ Supose that Ent is a factor variable not a numeric one.
 pigeon_tb$Ent<- as.factor(pigeon_tb$Ent)
 pigeon_tb
 ```
-if the variable is as string to convert them type into numeric the function is as.numeric()
+If the variable is as string to convert them type into numeric the function is as.numeric()
 
-## 4. Merging datasets
-It's common that you have to merge many files to obtain your final dataset. In R at the same that Python you need to have the same colname in the key variable.
+Commonly, you have to merge many files to obtain your final dataset. In R at the same that Python you need to have the same colname in the key variable.
 
 ### Joins
 R has the SQL functions to join files, the key to join the data sets must have the same name in the files.
@@ -170,38 +173,54 @@ For this example the key is the column called 'Athlete'
 inner_join(athlete_country, athlete_sport, by='Athlete')
 ```
 
-the structure to reproduce left and right join is the same that the example above.
+The structure to reproduce left and right join is the same that the example above.
 
 #### Matching strings
-There are two ways to match strings, the fist one is creating a list of all levels and defining the category when each one belong, the second way is defining a distance betweeen two strings base on how diferent they are.
+There are two ways to match strings, the first one is creating a list of all levels and defining the category when each one belongs, the second way is defining a distance between two strings base on how different they are.
 
 ##### Uppercase
-The 'M' don't match with 'm', firts of all is necessary to homogenaize the strings for example all of them in uppercase
+The 'M' doesn't match with 'm', first of all is necessary to homogenize the strings, for example, all of them in uppercase.
 
-```{r}
+```{r, warning=FALSE, message=FALSE}
 library(R.utils)
 pigeon_tb%>%mutate(Breeder=toupper(Breeder))
 
 ```
 
+Identifing if a substring is inside another one
 ```{r}
-gender <- c("M", "male ", "Female", "fem.", 'ma', 'Fe')
+gender <- c("MA", "male ", "Female", "fem.", 'ma', 'Fe')
 grepl("ma", gender)
+```
+Ignoring upper and lower case
+```{r}
 grepl("m", gender, ignore.case = TRUE)
 ```
+Just starting with m
 ```{r}
-#gender
-#y=c()
-#for (i in gender){
-#  y[i]='ma' %in% gender[i]
-   
-#} 
-#y
-#x<-c()
-#if(y[i]==FALSE){x[i]='H'}
-#x
+grepl("^m", gender, ignore.case = TRUE)
+
 ```
 
+#### String distances
+String distances is an algorithm that identify how much different two strings are. This example is part of the Van der Loo, M. and De Jonge, E. (2013) in page 25 if you want go deep in details.
+
+```{r}
+codes <- c("male", "female")
+D <- adist(gender, codes)
+colnames(D) <- codes
+rownames(D) <- gender
+D <- transform(D, min = pmin(male, female)) #however this function just return the value 
+D
+```
+Identifying the column which contain the minimun distance 
+
+```{r}
+i <- apply(D, 1, which.min)
+i
+data.frame(rawtext = gender, coded = codes[i])
+
+```
 
 ## 5. Dealing with NA
 
@@ -220,11 +239,12 @@ levels(pigeon_tb$Name)[levels(pigeon_tb$Name)==""]<-NA
 levels(pigeon_tb$Name)
 pigeon_tb
 ```
+Imputation is a very imporant topic and needs go in severals details for that reason it is not covered in this paper.
 
 ## References 
 Van der Loo, M. and De Jonge, E. (2013) An introduction to data cleaning with R. https://cran.r-project.org/doc/contrib/de_Jonge+van_der_Loo-Introduction_to_data_cleaning_with_R.pdf
 
- Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2019). dplyr: A Grammar of
+Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2019). dplyr: A Grammar of
   Data Manipulation. R package version 0.8.3. https://CRAN.R-project.org/package=dplyr
 
   Hadley Wickham and Lionel Henry (2019). tidyr: Easily Tidy Data with 'spread()' and
@@ -233,18 +253,21 @@ Van der Loo, M. and De Jonge, E. (2013) An introduction to data cleaning with R.
   Kirill Müller and Hadley Wickham (2019). tibble: Simple Data Frames. R package version 2.1.3.
   https://CRAN.R-project.org/package=tibble
   
-    Hadley Wickham and Jennifer Bryan (2019). readxl: Read Excel Files. R package version 1.3.1.
+  Hadley Wickham and Jennifer Bryan (2019). readxl: Read Excel Files. R package version 1.3.1.
   https://CRAN.R-project.org/package=readxl
   
   Hadley Wickham (2017). tidyverse: Easily Install and Load the 'Tidyverse'. R package version
   1.2.1. https://CRAN.R-project.org/package=tidyverse
 
-```{r, include=FALSE}
+
+
+```{r, echo=FALSE, include=FALSE}
 citation("dplyr")
 citation("tidyr")
 citation("tibble")
-citation("readxl")
 citation("tidyverse")
+citation("readxl")
+
 ```
 
 
