@@ -1,5 +1,5 @@
 ---
-title: "Reading and data wranging R"
+title: "Reading and data wrangling in R"
 author: "Andrea Marcela Huerfano Barbosa"
 date: "August 14, 2019"
 output: pdf_document
@@ -25,9 +25,16 @@ There are many ways to import datasets depending on the file characteristics as 
 * read.delim2 tab-delimited files with comma as decimal separator.
 * read.fwf data with a predetermined number of bytes per column.
 
+Some functions to inspect the data are: colnames(), srt(),head(), tail()
+
 ```{r}
 pigeon <-  read.delim("C:/Users/Andrea/Desktop/pigeon-racing.txt") 
+colnames(pigeon)
 str(pigeon)
+```
+The summary function give you a view about distribution for cuantitative varaibles and the levels of each factor.
+```{r}
+summary(pigeon)
 ```
 
 ### excel
@@ -68,7 +75,7 @@ pigeon_tb%>%sample_n(4)
 ```
 Extracting a percentage in the data set
 ```{r}
-pigeon_tb%>%sample_frac(0.03, replace=FALSE)
+pigeon_tb%>%sample_frac(0.01, replace=FALSE)
 ```
 
 ##### Selecting columns
@@ -97,6 +104,12 @@ pigeon_tb%>%arrange(-Speed)
 
 ## 2.Cleaning data
 ### Creation of new variables
+#### New variable
+```{r}
+pigeon_tb%>%mutate(NewSpeed=Speed/2)
+```
+
+
 #### Split
 Split a string by an specific separator
 ```{r}
@@ -110,6 +123,23 @@ pigeon_tb%>%separate(Pigeon, sep='-', c('Num', 'id', 'det'))
 ```{r}
 pigeon_tb%>%unite_('new', c('Pos','Sex'), sep = '-')
 ```
+#### New varaible base on levels of another one
+```{r}
+levels(pigeon_tb$Color)
+B_I<-c("BB","BBPD","BBPI","BBSP","BBWF","BC","BCH","BCSP","BCWF","BKWF","BLCK","BLK")
+D_I<-c("DC","DCWF")
+G_I<-c("GRIZ","GRZL")
+
+for (i  in 1:length(pigeon_tb$Color)){
+  if  (pigeon_tb$Color[i] %in% B_I){pigeon_tb$Ini[i]='B_I'}else{
+    if (pigeon_tb$Color[i] %in% D_I){pigeon_tb$Ini[i]='D_I'}else{
+      if(pigeon_tb$Color[i] %in% G_I){pigeon_tb$Ini[i]='G_I'}else{pigeon_tb$Ini[i]='Another'}
+      }
+    } 
+}
+as_data_frame(data.frame(pigeon_tb$Color,pigeon_tb$Ini))
+```
+
 #### Variable type conversion
 Supose that Ent is a factor variable not a numeric one.
 ```{r}
@@ -141,6 +171,37 @@ inner_join(athlete_country, athlete_sport, by='Athlete')
 ```
 
 the structure to reproduce left and right join is the same that the example above.
+
+#### Matching strings
+There are two ways to match strings, the fist one is creating a list of all levels and defining the category when each one belong, the second way is defining a distance betweeen two strings base on how diferent they are.
+
+##### Uppercase
+The 'M' don't match with 'm', firts of all is necessary to homogenaize the strings for example all of them in uppercase
+
+```{r}
+library(R.utils)
+pigeon_tb%>%mutate(Breeder=toupper(Breeder))
+
+```
+
+```{r}
+gender <- c("M", "male ", "Female", "fem.", 'ma', 'Fe')
+grepl("ma", gender)
+grepl("m", gender, ignore.case = TRUE)
+```
+```{r}
+#gender
+#y=c()
+#for (i in gender){
+#  y[i]='ma' %in% gender[i]
+   
+#} 
+#y
+#x<-c()
+#if(y[i]==FALSE){x[i]='H'}
+#x
+```
+
 
 ## 5. Dealing with NA
 
