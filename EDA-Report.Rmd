@@ -155,3 +155,35 @@ ggplot(Fair, aes(x = rate, y = religious, fill = nbaffairs)) + geom_tile()
       
 ```
 
+##References
+Yves Croissant (2016). Ecdat: Data Sets for Econometrics. R package version 0.3-1.
+  https://CRAN.R-project.org/package=Ecdat
+  
+ H. Wickham. ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York, 2016.
+ 
+  G. Grothendieck (2017). sqldf: Manipulate R Data Frames Using SQL. R package version 0.4-11.
+  https://CRAN.R-project.org/package=sqldf
+  
+   Sarkar, Deepayan (2008) Lattice: Multivariate Data Visualization with R. Springer, New York.
+  ISBN 978-0-387-75968-5
+  
+   Hadley Wickham, Romain François, Lionel Henry and Kirill Müller (2019). dplyr: A Grammar of
+  Data Manipulation. R package version 0.8.3. https://CRAN.R-project.org/package=dplyr
+
+ Diethelm Wuertz, Tobias Setz and Yohan Chalabi (2017). fBasics: Rmetrics - Markets and Basic
+  Statistics. R package version 3042.89. https://CRAN.R-project.org/package=fBasics
+  
+Hao Zhu (2019). kableExtra: Construct Complex Table with 'kable' and Pipe Syntax. R package
+  version 1.1.0. https://CRAN.R-project.org/package=kableExtra
+
+  
+```{r, echo=FALSE, results=FALSE}
+citation("Ecdat")
+citation("ggplot2")
+citation("sqldf")
+citation("lattice")
+citation("dplyr")
+citation("fBasics")
+citation("kableExtra")
+```
+
