@@ -1,0 +1,157 @@
+---
+title: "Fair's Extramarital Affairs Report"
+author: "Andrea Marcela Huerfano Barbosa"
+date: "August 18th of 2019"
+header-includes: #allows you to add in your own Latex packages
+- \usepackage{float} #use the 'float' package to hold the figure
+- \floatplacement{figure}{H}
+output:
+  pdf_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.pos="h")
+```
+
+
+##Description
+Cross-section data from a survey conducted by Psychology Today in 1969. The main topic is infidelity data, known as Fair's Affairs. The dataset used in this study containing 601 observations on 9 variables. Available in:
+http://pages.stern.nyu.edu/~wgreene/Text/tables/tablelist5.htm
+
+
+##Variables
+
+1. *Affairs*: How often engaged in extramarital sexual intercourse during the past year?
+2. *Gender*: Indicating female or male.
+3. *Children*: Are there children in the marriage?  
+4. *Age*: Numeric variable coding age in years:
++ 17.5 = under 20
++ 22 = 20-24
++ 27 = 25-29
++ 32 = 30-34
++ 37 = 35-39
++ 42 = 40-44
++ 47 = 45-49
++ 52 = 50-54
++ 57 = 55 or over. 
+5.  *Religiousness*:
+1 = anti, 2 = not at all, 3 = slightly, 4 =somewhat, 5 = very.
+6. *Education*: 
++ 9 = grade school
++ 12 = high school graduate
++ 14 = some college
++ 16 = college graduate
++ 17 = some graduate work
++ 18 = master degree
++ 20= Ph.D., M.D., or other advanced degree.
+7. *Occupation*: Numeric variable coding occupation according to Hollingshead classification (reverse numbering).
+8. *Rating*: Self rating of marriage:
++ 1 = very unhappy.
++ 2 = somewhat unhappy
++ 3 = average
++ 4 = happier than average
++ 5 = very happy.
+9. *Years married*:Number of years married
++ 0.125 = 3 months or less
++ 0.417= 4-6 months
++ 0.75 = 6 months-1 year
++ 1.5 = 1-2 years
++ 4 = 3-5 years
++ 7 = 6-8 years
++ 10 =9-11 years 
++ 15 = 12 or more years.
+
+
+# Exploratory Descriptive Analysis
+```{r libraries,  echo=FALSE, include=FALSE}
+
+library(Ecdat)
+library(ggplot2) #graphs
+library(sqldf)
+library(dplyr)
+library(lattice)
+library(fBasics)
+library(kableExtra)
+```
+
+```{r functions, include=FALSE}
+fig<- local({
+  i<-0
+  ref<- list()
+  list(
+    cap=function(refName, text){
+      i<<-i+1
+      ref[[refName]]<<-i
+      paste("Figure", i, ":", text, sep="")
+    },
+    ref=function(refName){
+      ref[[refName]]
+    })
+  
+}) ##This function numerates the figures
+```
+
+
+From the plot below, we can realize that the most common number of affairs in the past year is 0, perhaps more interesting is that a few people have had 1,2,3,7 or 12 affairs in the past year. The distribution between men  and women is almost the same as we can see in the pie chart because the percentage are so similar.
+
+```{r histogram for affairs,fig.height=3, fig.cap=("Distribution of affairs"), fig.pos='h', echo=FALSE}
+data("Fair")
+attach(Fair)
+nbaffairs%>%hist(  xlab="Number of affairs in the past year", ylab="Count of people", col="darkslategray", main="")
+```
+
+```{r pie chart, fig.height=2.6, fig.cap=('Population distribution by gender'), echo=FALSE}
+t<-data.frame(Fair%>%group_by(sex)%>%summarise(n=n()))
+
+# Barplot
+bp<- ggplot(t, aes(x='', y=n, fill=sex))+geom_bar(width = 1, stat = "identity")
+bp+ coord_polar("y", start = 0) +geom_text(aes(y =c(400, 100), label = as.factor(round(n/sum(n),2))), size=4)
+```
+
+
+In Figure 3 we can see a similar the behavior for the number of affairs by gender because the majority people in each level didn't have affairs in the past year, futhemore a few amount of women and men have had between 1 and 12 affairs.
+
+```{r, fig.cap="Plot of the number of affairs in the past year by gender", fig.height=2, fig.pos='h',echo=FALSE}
+qplot(data=Fair,nbaffairs, facets = .~sex,colour=sex,fill=sex, xlab="Number of affairs in the past year",ylab="Count of people", binwidth=1 )
+
+```
+
+From the Figure 4, we can realize that women with low educational levels (9-15 asociated with grades school and some college) have more affairs than men in the same educational level. Perhaps, for educational level higher than 16(college graduate), men tend to have more affairs than women in the same educational level.  
+
+```{r, fig.height=3,fig.cap="Number of affairs  for each combination of educational level  and gender" ,  echo=FALSE}
+qplot(education, nbaffairs, geom="jitter", color=sex, shape=sex, ylab="Number of affairs", xlab="Educational level" )
+```
+
+From Table 1, we can see quiet clearly  that people who have children tend to have more affairs that people without children. The table shows the proportion in these levels.
+
+```{r, echo=FALSE, warning=FALSE}
+library(kableExtra)
+g<-Fair%>%group_by(child)%>%summarise(n=n())%>%mutate('%' = round(n / sum(n),2))
+
+h<-data.frame(g$child,g$`%`)
+colnames(h)<-c('Child','%')
+
+h%>%kable(caption='Have children ')%>%
+  kable_styling(latex_options = "H") ##Fix the table in the right place
+
+```
+
+From the Figure 5, when the rating of marriage increases people tends to have less number of affairs, perhaps more interesting is that there  are a great difference when people rate their marriage with 2 (somewhat unhappy) or 3(average) because the number of affairs tend to decrease strongly between these levels another interesting fact is when people rate their marriage with 4(happier than average) or 5(very happy) for the 75% of the marriages in these levels there are not affairs in the past years.
+
+```{r,fig.height=4, fig.cap="Boxplot for the number of affairs by  the rating of marriage", echo=FALSE}
+boxplot(nbaffairs~rate, xlab="Rating of marriage", ylab="Affairs", col="deeppink3")
+```
+
+The maximum  number of affairs by any combination of rate and religious level appears in the next heatmap.
+```{r, fig.cap='Rate, religious level and maximum number of affairs',fig.height=5, echo=FALSE}
+
+Fair$religious<- as.factor(Fair$religious)
+levels(Fair$religious)<-c('Anti', 'Not all', 'Slightly', 'Somewhat', 'Believe')
+Fair$rate<-as.factor(Fair$rate)
+levels(Fair$rate)<-c('Unhappy','Some','Average','Happy','Very happy')
+
+ggplot(Fair, aes(x = rate, y = religious, fill = nbaffairs)) + geom_tile()
+      
+```
+
