@@ -366,9 +366,21 @@ Physical measurements and blood measurements from high performance athletes at t
 library(readxl)
 colnames(AIS_f)
 atletas<-subset(AIS_f,select = c("LBM", "Ht", "Wt", "BMI", "SSF"))
-summary(atletas)
-
 ```
+The summary function is an excelent option to see a brief description of each variable, finding here all of the quantiles. 
+```{r}
+summary(atletas)
+```
+
+##Scatterplot matrix
+Another good option is looking a matrix with all the scatterplots. For example we can see that Wt and BMI have a linear behavior with the response variable (LBM), and the other variables even when some of them have an aproximate linear behavior is easy to see that these ones are more dispersed, for example: Ht and SSF. 
+```{r, warning=FALSE,message=FALSE,fig.height=5, fig.pos='h'}
+library(GGally)
+ggpairs(atletas, columns = 1:ncol(atletas), title = "",  
+  axisLabels = "show", columnLabels = colnames(atletas))
+```
+
+
 
 ##Correlations
 The simple correlation is a measure used to determine the strength and the direction of the relationship between two variables. In this example the independent variable is lbm and the other ones are the dependent variables.
@@ -381,16 +393,16 @@ fit <- lm(LBM ~ 1+Ht+Wt+BMI+SSF, data=atletas) ##This model contain all of the v
 ##It is used to determine the simple and partial correlations
 ```
 
-
-```{r,fig.height=6, fig.pos='h',echo=FALSE}
-Correlaciones(fit,3,1,4,"") ##Choosing 3 points. So useful to determine outliers
+,
+```{r,fig.height=7, fig.pos='h',echo=FALSE}
+Correlaciones(fit,4,1,4,"") ##Choosing 3 points. So useful to determine outliers
 ```
 
 ##Partial correlation
 The partial correlation for ht and lbm is shorter than the obtained in the plot of simple correlation, that means that part of the information of the ht varaible over the response variable is also conteined in the other dependent variables . The same result appears when the simple correlation coeficient is compared 0.7082 with 0.377. This situations occurs in the same way with Wt having 0.9207 vs 0.338. Finally, rcc has a partial correlation coefficient of 0.195. This correlations describe the information that has every variable and there is not conteined in ahother one.
 
-```{r, fig.height=6,fig.pos='h'}
-Correlaciones.parcial(fit,3,1,1,"")
+```{r, fig.height=7,fig.pos='h'}
+Correlaciones.parcial(fit,4,1,1,"")
 ```
 
 ```{r,, warning=FALSE, message=FALSE}
@@ -500,7 +512,6 @@ qqplot.normal(fit3,500,0.01,3,"")
 ```
 
 
-
 ```{r}
 ######## Evaluando homogeneidad de la varianza ########
 library(lmtest)
@@ -514,3 +525,55 @@ dwtest(fit3)
 
 ```
 We can see that the model fits good the data and the residuals examination were good. Then our model is finished.
+
+##Moldel interpretation
+The final model is: $LBM=B_0+B_1Wt+B_2log(SSF)$, now, it is the time to interpretate its parameters. From the summary function we can identify just the coefficients.
+```{r}
+summary(fit3)$coef
+```
++ $B_0$ for a person who has 0 in Wt and log(SSF) the LBM should be in average 36.6887 
++ $B_1$ for each adicional unit of the Wt the LBM should increase in average 0.8379 units
++ $B_2$ for each adicional unit of log(SSF) the LBM should decrease in average -8.68087 units
+
+
+##References
+```{r, echo=FALSE, results=FALSE}
+citation("GLMsData")
+citation("dplyr")
+citation("readxl")
+citation("GGally")
+citation("MASS")
+citation("zoo")
+citation("lmtest")
+```
+ * Peter K. Dunn and Gordon K. Smyth (2018). GLMsData:
+  Generalized Linear Model Data Sets. R package version 1.0.0.
+  https://CRAN.R-project.org/package=GLMsData
+
+* Hadley Wickham, Romain François, Lionel Henry and Kirill
+  Müller (2019). dplyr: A Grammar of Data Manipulation. R
+  package version 0.8.3.
+  https://CRAN.R-project.org/package=dplyr
+  
+*  Hadley Wickham and Jennifer Bryan (2019). readxl: Read Excel
+  Files. R package version 1.3.1.
+  https://CRAN.R-project.org/package=readxl
+  
+*   Barret Schloerke, Jason Crowley, Di Cook, Francois Briatte,
+  Moritz Marbach, Edwin Thoen, Amos Elberg and Joseph
+  Larmarange (2018). GGally: Extension to 'ggplot2'. R package
+  version 1.4.0. https://CRAN.R-project.org/package=GGally
+  
+*   Venables, W. N. & Ripley, B. D. (2002) Modern Applied
+  Statistics with S. Fourth Edition. Springer, New York. ISBN
+  0-387-95457-0
+
+*   Achim Zeileis and Gabor Grothendieck (2005). zoo: S3
+  Infrastructure for Regular and Irregular Time Series. Journal
+  of Statistical Software, 14(6), 1-27.
+  doi:10.18637/jss.v014.i06
+  
+*   Achim Zeileis, Torsten Hothorn (2002). Diagnostic Checking in
+  Regression Relationships. R News 2(3), 7-10. URL
+  https://CRAN.R-project.org/doc/Rnews/
+
