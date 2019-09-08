@@ -1,0 +1,185 @@
+---
+title: "Logistic Regression"
+author: "Andrea Huerfano"
+date: "September 4, 2019"
+output: pdf_document
+---
+
+#Dataset
+For this statistical method, we are going to use the data set crabs avaible in R through the library MASS, its variables are:
+
++ *sp:* species - "B" or "O" for blue or orange.
++ *sex:* M for male and F for female
++ *index:* 1:50 within each of the four groups.
++ *FL:* frontal lobe size (mm).
++ *RW:* rear width (mm).
++ *CL:* carapace length (mm).
++ *CW:* carapace width (mm).
++ *BD:* body depth (mm).
+
+The function summary will be used to have a first idea of the data structure.Notice that the variable indice is deleted because we will supose that all of the crabs belogns to the same group.
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+Packages <- c("MASS","dplyr","ggplot2","readr", "pscl","ROCR", "GGally") 
+lapply(Packages, library, character.only = TRUE)
+set.seed(3)
+```
+```{r}
+data(crabs)
+crabs<-crabs[,-3]
+summary(crabs)
+```
+
+In the data set we have two category variables: sp that is our target and sex,the others are quantitatives, that is the reason why in sex appears barplots and the other variables have density distribution plots and scatter plots. The two colors are associeted with  the break up of sp wich has two levels, pink is associated with level B and blue with the second level (B). Notice that the sex distribution is the same for both of the levels because the two barplots have the same structure, with the box plots we can see that the behaviour of the other variables is different in the levels for sex and sp. Even when we haven´t examine the correlation is easy to see that there is a strong linear relation between the varaibles and in some cases like CL vs. RW the dispersion increase when the variables take high values.
+
+```{r, warning=FALSE,message=FALSE,fig.height=6, fig.pos='h'}
+
+ggpairs(crabs, columns = 2:ncol(crabs), title = "Crabs' variables behavior",
+  axisLabels = "show", mapping = aes(colour=sp,alpha = 5),
+  upper = list(continuous = wrap("cor", size =3)), 
+  lower = list(continuous = wrap("points", alpha = 0.9,    size=0.3)))
+```
+
+
+To create the model, the first step is preparing the split over the database to create two sets: training and testing datasets, in this case we are going to use 80 percent of the sample for training the model and the other 20 percent will be used to validate de model's quality. The distribution of the observation in the two set is made over a random simple sampling applied over the index.
+
+```{r}
+
+train_index <- sample(1:nrow(crabs), 0.8 * nrow(crabs))
+test_index <- setdiff(1:nrow(crabs), train_index)
+# Build X_train and X_test
+X_train <- crabs[train_index,]
+X_test <- crabs[test_index,]
+```
+#Correlation
+We can see that the variables have a strong correlation almost all of them, that is a problem if we would try to put in the model all of these variables. The just the varaibles sex,FL,RW and CL will keep to start the model. 
+```{r}
+cor(X_train[,3:ncol(crabs)])
+```
+
+#Model identification
+For the model selection we are going to use the Step aic and the R function glm will be used to compute de logistic regression, specifying the option family = binomial, that means the response variable is binary. AIC penalizes increasing the number of parameters into de model, and the best option will be the model with the smallest. Not all the variables are in the inicial model because of the high correlation between them as I said before.
+```{r, warning=FALSE, message=FALSE}
+fit <- glm(sp ~ 1 + sex+FL+RW+CL+sex*FL+sex*RW, family=binomial, data=X_train)
+stepAIC(fit)
+```
+Well, let see the best model in detail:
+
+```{r, warning=FALSE, message=FALSE}
+fit<-glm(formula = sp ~ sex + FL + CL, family = binomial, data = X_train)
+summary(fit)
+```
+
+We would like to know the probability that the event occurs when we have a male, with FL=11.1 and CL=23.8.
+
+```{r}
+x <- c(1,1,11.1,23.8)
+eta <- sum(x*coef(fit))
+prob <- exp(eta)/(1+exp(eta)) ;prob 
+```
+R has a function predict which enables us to calculate quickly probabilities just entry the values of each variable.
+```{r}
+newdata <- data.frame( sex='M',FL=11.1,RW=9.9,CL=23.8,CW=27.1,BD=9.8)
+probabilities <- fit %>% predict(newdata, type = "response")
+probabilities
+```
+#Testing the model
+It is using the probability that we are going to validade our model, predicting the value in the testing set  for this is necessary define a threshold, in this case will be 0.4, that means that if the probability is greater than 0.4 the observation will be associated with  the level *O* and in another case will be mark with *B*.
+```{r}
+rev<-predict(fit,X_test,type = "response")
+ X_test$predicted.classes<- ifelse(rev > 0.4, "O", "B")
+ head(X_test,3)
+ tail(X_test,3)
+```
+
+To check the model accuracy we are going to see the percent associated with values that were classified right.The 92.5% of the observations were right classified.
+```{r}
+mean(X_test$predicted.classes == X_test$sp)
+```
+#Pseudo R2
+McFadden measure is 0.88 that is a really good value because this metric ranges from 0 to just under 1, with values closer to zero indicating that the model has no predictive power. 
+```{r, warning=FALSE, message=FALSE}
+pR2(fit)
+```
+
+
+#Roc curve. 
+```{r, warning=FALSE,message=FALSE ,fig.height=4, fig.pos='h'}
+prob <- predict(fit, newdata=X_test, type="response")
+pred <- prediction(prob, X_test$sp)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+plot(perf)
+```
+We exmaine the ROC curve which shows the trade off between the rate at which you can correctly predict something with the rate of incorrectly predicting something.
+
+
+
+
+
+#Parameters interpretation
+```{r}
+fit$coefficients
+```
+
+
+Our final model is 
+$y=B_0+B_1Sex_{male}+B_2Fl+B_3Cl$
+
++ $e^{B_1}$  when the crab is male the odds of sucess increase in $e^{2.100512}$ 8.166 times, that mean that males have 8.16 times of being   *O* than females 
++ $e^{B_2}$ for  each adittional unit in FL the odss of sucess (being *O*) increase in $e^{19.55}$
++ $e^{B_3}$ for each adittional unit in CL the odds of being *O* decrease in $e^{-8.87}$ 
++ $e^{B_0}$ when the crab is female and have 0 value in FL and CL the odds of being *O* is $e^{-23.41}$
+
+
+Finally to check the well know s-shape for the logistic regreesion we are going to use the ggplot library
+```{r, warning=FALSE, fig.height=3, fig.pos='h'}
+X_test$rev<-predict(fit,X_test,type = "response")
+X_test %>%
+  ggplot(aes(CL, rev)) +
+  geom_point(alpha = 0.1) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial")) +
+  labs(
+    title = "Logistic Regression Model", 
+    x = "Plasma Glucose Concentration",
+    y = "Probability of being diabete-pos"
+    )
+```
+
+# References
+Venables, W. N. & Ripley, B. D. (2002) Modern Applied
+  Statistics with S. Fourth Edition. Springer, New York. ISBN
+  0-387-95457-0
+  
+Hadley Wickham, Romain François, Lionel Henry and Kirill
+  Müller (2019). dplyr: A Grammar of Data Manipulation. R
+  package version 0.8.3.
+  https://CRAN.R-project.org/package=dplyr
+  
+  H. Wickham. ggplot2: Elegant Graphics for Data Analysis.
+  Springer-Verlag New York, 2016.
+  
+  Hadley Wickham, Jim Hester and Romain Francois (2018). readr:
+  Read Rectangular Text Data. R package version 1.3.1.
+  https://CRAN.R-project.org/package=readr
+  
+    Simon Jackman (2017). pscl: Classes and Methods for R
+  Developed in the Political Science Computational Laboratory.
+  United States Studies Centre, University of Sydney. Sydney,
+  New South Wales, Australia. R package version 1.5.2. URL
+  https://github.com/atahk/pscl/
+  
+  
+  Sing T, Sander O, Beerenwinkel N, Lengauer T (2005). “ROCR:
+visualizing classifier performance in R.” _Bioinformatics_,
+*21*(20), 7881. <URL: http://rocr.bioinf.mpi-sb.mpg.de>.
+
+
+  Barret Schloerke, Jason Crowley, Di Cook, Francois Briatte,
+  Moritz Marbach, Edwin Thoen, Amos Elberg and Joseph
+  Larmarange (2018). GGally: Extension to 'ggplot2'. R package
+  version 1.4.0. https://CRAN.R-project.org/package=GGally
+
+```{r, echo=FALSE, results=FALSE}
+Packages <- c("MASS","dplyr","ggplot2","readr", "pscl","ROCR", "GGally") 
+lapply(Packages, citation)
+```
