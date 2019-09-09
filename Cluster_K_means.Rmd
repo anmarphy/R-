@@ -1,0 +1,118 @@
+---
+title: "Clustering"
+author: "Andrea Huerfano"
+date: "September 8, 2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r , echo=TRUE, warning=FALSE, message=FALSE, results='hide'}
+packages<-c("FactoMineR", "factoextra", "xtable", "NbClust", "plyr","GGally", "ggcorrplot")
+lapply(packages, library, character.only=TRUE)
+```
+
+```{r,echo=TRUE, warning=FALSE, message=FALSE}
+ winequality.red <- read.csv("C:/Users/Andrea/Desktop/wine/winequality-red.csv", sep=";")
+winequality.red<-winequality.red[,-12]
+
+```
+
+```{r}
+corr <- round(cor(winequality.red), 1)
+ggcorrplot(corr)
+```
+
+
+```{r}
+#colnames(winequality.red)
+#winequality.red<-winequality.red[,-c(1,3,7)]
+#corr <- round(cor(winequality.red), 1)
+#ggcorrplot(corr)
+```
+
+
+
+Se utiliza el paquete *NbClust*  para calcular el número óptimo de grupos, en este caso a partir del indicador de *Hartigan*, el cuál sugiere el número óptimo de grupos y con este la mejor partición posible. El código asociado a este procedimiento se presenta a continuación
+
+It can be
+concluded that standardization before clustering
+algorithm leads to obtain a better quality, efficient and
+accurate cluster result.
+
+```{r,echo=TRUE, warning=FALSE, message=FALSE}
+df<-scale(winequality.red)
+res.wine<-NbClust(df, distance = "euclidean", min.nc = 2, max.nc = 10, method = "kmeans",
+index = "hartigan")
+res.wine$Best.nc
+```
+
+
+```{r,echo=TRUE, warning=FALSE, message=FALSE}
+set.seed(21)
+# Elbow method
+elbow<-fviz_nbclust(df, kmeans, method = "wss") +
+    geom_vline(xintercept = 4, linetype = 2)+
+  labs(subtitle = "Elbow method"); elbow
+
+# Silhouette method
+Silhouette<-fviz_nbclust(df, kmeans, method = "silhouette")+
+  labs(subtitle = "Silhouette method");Silhouette
+
+# Gap statistic
+
+gap<-fviz_nbclust(df, kmeans, nstart = 25,  method = "gap_stat", nboot = 50)+labs(subtitle = "Gap statistic method"); gap
+```
+
+Mean: 4 then number of cluster will be 4
+
+```{r, echo=TRUE}
+set.seed(10)
+n_cluster<-4
+kmedia2<-kmeans(df, n_cluster, nstart = 1000)
+
+```
+
+
+```{r, echo=TRUE}
+print(xtable(kmedia2$centers), comment=FALSE)
+```
+
+
+```{r}
+plot(winequality.red, col=kmedia2$cluster, main="Posición de los grupos respecto a las variables")
+points(kmedia2$centers, col = kmedia2$cluster, pch = 23, cex = 1.5)
+```
+
+
+```{r}
+
+plot(winequality.red$chlorides, winequality.red$residual.sugar, col=kmedia2$cluster, xlab = "chlorides",ylab = "residual sugar")
+legend(0,100, legend=c('1', '2', '3', '4'),col=c("black","blue", "red","green" ),
+pch = 18, cex = 1)
+```
+```{r}
+print(round(kmedia2$withinss,2))
+```
+
+```{r}
+print(kmedia2$betweenss)
+```
+
+Nótese que la suma de cuadrados entre grupos es mayor que cada una de las sumas de cuadrados entre los grupos, lo que sugiere que los grupos entre si están bien diferenciados (alto grado de heterogeneidad) y en su interior presentan alto grado de homogeneidad.
+
+```{r, fig.height=3.8}
+res.PCA<-PCA(df, ncp = 2)
+```
+
+Ahora, utilicemos la función HPC sobre res.PCA
+```{r,fig.height=4}
+set.seed(10)
+res.hcpc<-HCPC(res.PCA,  nb.clust = -1,min = 3, max = 6)
+```
+
+```{r}
+#gmfd_kmeans(df, n.cl = 4, metric, p = NULL, k_trunc = NULL)
+```
+
+
