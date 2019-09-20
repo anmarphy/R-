@@ -1,0 +1,89 @@
+---
+title: "Untitled"
+author: "Andrea Huerfano"
+date: "September 19, 2019"
+output: html_document
+---
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+rm(list = ls(all.names = TRUE))
+Packages <- c("MASS","dplyr","ggplot2","readr", "pscl","ROCR", "GGally", "foreign") 
+lapply(Packages, library, character.only = TRUE)
+set.seed(3)
+```
+```{r}
+dv <- read.dta("http://data.princeton.edu/wws509/datasets/docvis.dta")
+str(dv)
+dv<-dv[,-c(17:21)]
+```
+
+```{r}
+quanti<-dv[,c('educ','age','income','firmsize','famsize')]
+corr<-cor(quanti);corr
+ggcorrplot(corr)
+```
+
+```{r}
+
+train_index <- sample(1:nrow(dv), 0.8 * nrow(dv))
+test_index <- setdiff(1:nrow(dv), train_index)
+# Build X_train and X_test
+X_train <- dv[train_index,]
+X_test <- dv[test_index,]
+colnames(X_train)
+```
+
+```{r}
+m1<- glm(docvis ~ educ+age+income+female+black+married+firmsize+famsize+msa+vegood+injury+chronic,	data = X_train, family = poisson())
+summary(m1)
+stepAIC(m1)
+```
+
+```{r}
+m0<-glm(formula = docvis ~ educ + age + income + female + black + 
+    married + firmsize + famsize + vegood + injury + chronic, 
+    family = poisson(), data = X_train)
+summary(m0)
+```
+Cheking that the confidence interval for each coeficient doesn't contain the zero
+
+```{r}
+b<-coef(m0)
+se<- sqrt(diag(vcov(m0)))
+
+ci<-list()
+for (i in 1:11){
+  ci[[i]]=b[i] + c(-1, 1) * qnorm(0.975) * se[i]
+  i+1
+}
+
+ci
+```
+for each adittional year of education (other variables constant)  reports 7.19% more dvis . The z-test 19.669 is highly significant
+```{r}
+(exp(b['educ'])-1)*100
+```
+
+```{r}
+rev<-predict(m0,X_test,type = "response")
+ X_test$predicted.classes<- round(rev,2)
+ head(X_test,3)
+ tail(X_test,3)
+```
+```{r}
+sum(X_test$predicted.classes-X_test$docvis)/length(X_test)
+```
+almost one unit of difference in each observation :(
+
+
+```{r}
+plot(X_train%>%group_by(docvis)%>%summarise(n()))
+
+```
+
+excess of zeros
+
+
+
+
+
