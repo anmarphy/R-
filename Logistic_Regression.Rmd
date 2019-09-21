@@ -2,7 +2,10 @@
 title: "Logistic Regression"
 author: "Andrea Huerfano"
 date: "September 4, 2019"
-output: pdf_document
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
 #Dataset
@@ -69,6 +72,12 @@ Well, let see the best model in detail:
 fit<-glm(formula = sp ~ sex + FL + CL, family = binomial, data = X_train)
 summary(fit)
 ```
+There is enough statistical evindence that there is no overdispersion (null hipotesis) 
+```{r}
+deviance(fit) ##Compare N-p
+nrow(X_train)-4
+pchisq(fit$deviance, df=fit$df.residual, lower.tail=FALSE)
+```
 
 We would like to know the probability that the event occurs when we have a male, with FL=11.1 and CL=23.8.
 
@@ -83,6 +92,21 @@ newdata <- data.frame( sex='M',FL=11.1,RW=9.9,CL=23.8,CW=27.1,BD=9.8)
 probabilities <- fit %>% predict(newdata, type = "response")
 probabilities
 ```
+The cook distance to identify leverage points.
+```{r,warning=FALSE, message=FALSE, fig.height=5,fig.align='h'}
+source("macros.txt") ##professor Vanegas
+dC(fit, identify=4)
+
+```
+Residuals behavior
+```{r,warning=FALSE, message=FALSE, fig.height=5,fig.align='h'}
+bc(fit, rep=100, alpha=0.9)
+```
+
+
+
+
+
 #Testing the model
 It is using the probability that we are going to validade our model, predicting the value in the testing set  for this is necessary define a threshold, in this case will be 0.4, that means that if the probability is greater than 0.4 the observation will be associated with  the level *O* and in another case will be mark with *B*.
 ```{r}
@@ -169,8 +193,7 @@ Hadley Wickham, Romain François, Lionel Henry and Kirill
   https://github.com/atahk/pscl/
   
   
-  Sing T, Sander O, Beerenwinkel N, Lengauer T (2005). “ROCR:
-visualizing classifier performance in R.” _Bioinformatics_,
+  Sing T, Sander O, Beerenwinkel N, Lengauer T (2005).,
 *21*(20), 7881. <URL: http://rocr.bioinf.mpi-sb.mpg.de>.
 
 
@@ -179,6 +202,8 @@ visualizing classifier performance in R.” _Bioinformatics_,
   Larmarange (2018). GGally: Extension to 'ggplot2'. R package
   version 1.4.0. https://CRAN.R-project.org/package=GGally
 
+
+Vanegas Luis Hernando who share the macro.txt to examine the residuals.
 ```{r, echo=FALSE, results=FALSE}
 Packages <- c("MASS","dplyr","ggplot2","readr", "pscl","ROCR", "GGally") 
 lapply(Packages, citation)
