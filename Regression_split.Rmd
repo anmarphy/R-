@@ -1,0 +1,157 @@
+---
+title: "Regression_Training_Test"
+author: "Andrea Huerfano"
+date: "September 21, 2019"
+output: pdf_document
+header-includes:
+- \usepackage{float}
+- \floatplacement{figure}{H}
+---
+
+```{r, warning=FALSE, message=FALSE, results=FALSE}
+rm(list = ls(all.names = TRUE))
+Packages <- c("GLMsData", "dplyr","GGally", "MASS", "zoo", "lmtest") 
+lapply(Packages, library, character.only = TRUE)
+set.seed(3)
+source("Macros_Normal.txt")
+```
+
+
+```{r, message=FALSE, warning=FALSE}
+AIS_f<-data(AIS)
+```
+
+
+This file is one of the regression analysis papers. Here you can find:
+
++ Plots
++ Correlations
++ Identifying the best model
++ Influence and leverage points
++ Residuals examination
++ Variance examination
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+colnames(AIS)
+atletas<-subset(AIS,select = c("Sex","LBM", "Ht", "Wt", "BMI", "SSF"))
+summary(atletas)
+```
+```{r}
+ggpairs(atletas, columns = 1:ncol(atletas), title = "atlethes' variables behavior",
+  axisLabels = "show", mapping = aes(colour=Sex,alpha = 5),
+  upper = list(continuous = wrap("cor", size =3)), 
+  lower = list(continuous = wrap("points", alpha = 0.9,    size=0.3)))
+```
+
+```{r}
+fit <- lm(LBM ~ 1+Ht+Wt+BMI+SSF, data=atletas) ##No va sex pq no es cuanti
+Correlaciones(fit,2,1,4,"")
+```
+
+```{r, fig.height=7,fig.pos='h'}
+Correlaciones.parcial(fit,4,1,1,"")
+```
+
+```{r}
+
+train_index <- sample(1:nrow(atletas), 0.8 * nrow(atletas))
+test_index <- setdiff(1:nrow(atletas), train_index)
+# Build X_train and X_test
+X_train <- atletas[train_index,]
+X_test <- atletas[test_index,]
+
+```
+
+
+```{r}
+cor(X_train[,2:ncol(X_train)])
+```
+```{r, warning=FALSE, message=FALSE}
+fit <- lm(LBM ~ 1 + Sex+Ht+Wt+BMI+log(SSF), data=X_train)
+stepAIC(fit)
+
+```
+```{r}
+fit2<-lm(formula = LBM ~ Sex + Wt + BMI + log(SSF),data = X_train)
+summary(fit2)
+```
+
+
+```{r, echo=FALSE, fig.height=6,fig.pos='h'}
+######## Leverage #####################################
+
+#par(mfrow=c(6,1))
+Leverage <- Leverage.normal(fit2,3,"")
+
+######## Residuos #####################################
+residuos <- Residuos.normal(fit2,3,"")
+
+######## Influencia #####################################
+influence <- Influence.normal(fit2,2,2,3,"")
+
+
+######## QQ Plot y sus bandas de confianza ########
+qqplot.normal(fit2,500,0.01,3,"")
+```
+
+
+```{r}
+######## Evaluando homogeneidad de la varianza ########
+######## Test de Breusch-pagan ########
+bptest(fit2) ##Nula es homocedasticidad
+
+```
+ The Breusch-pagan's  test to examine the homogenicity in the variance is not rejected with a significant level of 5% 
+```{r}
+######## Evaluando NO correlaciÃ³n de los errores ########
+######## Test de Durbin-Watson ########
+dwtest(fit2)
+```
+ The autocorrelation between residuals is rejected at significant level of 5%
+ 
+```{r}
+Residual<-fit2$residuals
+rev<-as.data.frame(cbind(X_train$Wt,X_train$BMI,log(X_train$SSF),Residual))
+colnames(rev)=c("Wt", "BMI", "SSF", "Residual")
+ggplot(data=rev,aes(BMI,Residual))+geom_point()
+ggplot(data=rev,aes(Wt,Residual))+geom_point()
+ggplot(data=rev,aes(SSF,Residual))+geom_point()
+
+```
+```{r}
+rev<-predict(fit2,X_test,type = "response")
+ X_test$predicted.classes<- round(rev,2) 
+ X_test$indica<-'test'
+ X_train$predicted.classes<- round(fit2$fitted.values,2) 
+ X_train$indica<-'train'
+ head(X_test,3)
+ tail(X_test,3)
+```
+```{r}
+error<-X_test$LBM-X_test$predicted.classes
+sqrt(mean(error^2))
+quantile(error)
+boxplot(error)
+sd(error)
+```
+ 
+ 
+```{r}
+inside<-X_train$LBM-fit2$fitted.values
+sqrt(mean(error^2))/sqrt(mean(inside^2))
+quantile(inside)
+boxplot(inside)
+sd(inside)
+```
+ 
+ 
+```{r}
+total<-rbind(X_train,X_test)
+colnames(total)
+ggplot(total,aes(LBM,predicted.classes, color=indica))+geom_point()
+```
+ 
