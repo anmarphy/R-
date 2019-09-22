@@ -1,0 +1,133 @@
+rig <- function(n,mu,phi){
+y <- rnorm(n)^2
+x <- mu + mu^2*y/(2*phi) - (mu/(2*phi))*sqrt(4*mu*phi*y + mu^2*y^2)
+u <- runif(n)
+ifelse(u <= mu/(mu + x),x,mu^2/x)
+}
+
+bc <- function(fit.model, rep, alpha, xlab, ylab, main, pch, identify){
+	X <- model.matrix(fit.model)
+	n <- nrow(X)
+	p <- ncol(X)
+	w <- fit.model$weights
+	Xw <- X*matrix(sqrt(w),n,p)
+	H <- Xw%*%tcrossprod(solve(crossprod(Xw,Xw)),Xw)
+	h <- diag(H)
+	if(fit.model$family$family=="Gamma"){
+		ro <- resid(fit.model,type="response")
+		phi <- (n-p)/sum((ro/(fitted(fit.model)))^2)
+	}
+	if(fit.model$family$family=="inverse.gaussian")
+	phi <- (n-p)/sum(resid(fit.model,type="response")^2/fitted(fit.model)^3)
+	if(fit.model$family$family=="gaussian") phi <- (n-p)/sum(resid(fit.model)^2)
+	if(fit.model$family$family=="poisson" || fit.model$family$family=="binomial") phi <- 1
+	td <- resid(fit.model,type="deviance")*sqrt(phi/(1-h))
+	e <- matrix(0,n,rep)
+	bar <- txtProgressBar(min=0, max=rep, initial=0, width=min(50,rep), char="+", style=3)
+	i <- 1
+	while(i<=rep){
+	if(fit.model$family$family=="Gamma"){
+		resp <- rgamma(n,phi)
+		resp <- (fitted(fit.model)/phi)*resp
+	}
+	if(fit.model$family$family=="inverse.gaussian") resp <- rig(n,fitted(fit.model),phi)
+	if(fit.model$family$family=="gaussian") resp <- sqrt(1/phi)*rnorm(n,0,1) + fitted(fit.model)
+	if(fit.model$family$family=="poisson") resp <- rpois(n, fitted(fit.model))
+	if(fit.model$family$family=="binomial"){
+	  if(ncol(as.matrix(fit.model$model[,1]))==1){
+		resp <- runif(n)
+		resp <- resp <= fitted(fit.model)}
+	  else{ntot <- apply(fit.model$model[,1],1,sum)
+	       resp <- matrix(0,length(ntot),1)
+		   probs <- fitted(fit.model)
+	       for(j in 1:length(ntot)) resp[j] <- rbinom(1,ntot[j],probs[j])
+		   resp <- cbind(resp,ntot-resp)
+	  }	
+	}
+	fit <- try(glm(resp ~ -1 + X, family=fit.model$family, offset=fit.model$offset),silent=TRUE)
+	if(is.list(fit)){
+		w <- fit$weights
+		Xw <- X*matrix(sqrt(w),n,p)
+		H <- Xw%*%tcrossprod(solve(crossprod(Xw,Xw)),Xw)
+		h <- diag(H)
+		if(fit$family$family=="Gamma"){
+			ro <- resid(fit,type="response")
+			phi <- (n-p)/sum((ro/(fitted(fit.model)))^ 2)
+		}
+		if(fit.model$family$family=="inverse.gaussian")
+		phi <- (n-p)/sum(resid(fit,type="response")^2/fitted(fit)^3)
+		if(fit$family$family=="gaussian") phi <- (n-p)/sum(resid(fit)^2)
+		if(fit$family$family=="poisson" || fit$family$family=="binomial") phi <- 1
+		h <- ifelse(h>0.9999,0.9999,h)
+		e[,i] <- sort(resid(fit,type="deviance")*sqrt(phi/(1-h)))
+	    setTxtProgressBar(bar,i)
+		i <- i + 1
+	}
+	}
+	e1 <- numeric(n)
+	e2 <- numeric(n)
+	alpha <- 1 - alpha
+	for(i in 1:n){
+	eo <- sort(e[i,])
+	e1[i] <- quantile(eo,alpha/2)
+	e2[i] <- quantile(eo,1-alpha/2)}
+	med <- apply(e,1,mean)
+	faixa <- range(td,e1,e2)
+	par(pty="s")
+	if(missingArg(xlab))  xlab="Percentiles de la N(0,1)"
+	if(missingArg(ylab))  ylab="Residuo Componente del desvio"
+	if(missingArg(main))  main=" "
+	if(missingArg(pch))   pch=16
+	close(bar)
+	par(pty="s")
+	outm <- qqnorm(td, xlab=xlab, ylab=ylab, ylim=faixa, main=main, pch=pch)
+	par(new=TRUE)
+	qqnorm(e1,axes=FALSE,xlab="",ylab="",main="", type="l",ylim=faixa,lty=1)
+	par(new=TRUE)
+	qqnorm(e2,axes=FALSE,xlab="",ylab="", main="", type="l",ylim=faixa,lty=1)
+	par(new=TRUE)
+	qqnorm(med,axes=FALSE,xlab="",ylab="",main="",type="l",ylim=faixa,lty=2)
+	if(!missingArg(identify)) identify(outm$x,outm$y, n=identify)
+}
+
+
+dC <- function(fit.model, xlab, ylab, main, pch, identify){
+	X <- model.matrix(fit.model)
+	n <- nrow(X)
+	p <- ncol(X)
+	w <- fit.model$weights
+	Xw <- X*matrix(sqrt(w),n,p)
+	H <- Xw%*%tcrossprod(solve(crossprod(Xw,Xw)),Xw)
+	h <- diag(H)
+ 	if(fit.model$family$family=="Gamma"){
+		ro <- resid(fit.model,type="response")
+		phi <- (n-p)/sum((ro/(fitted(fit.model)))^2)
+		v <- fitted(fit.model)^2
+	}
+	if(fit.model$family$family=="inverse.gaussian"){
+	  phi <- (n-p)/sum(resid(fit.model,type="response")^2/fitted(fit.model)^3)
+	  v <- fitted(fit)^3
+	}
+	if(fit.model$family$family=="gaussian"){
+	   phi <- (n-p)/sum(resid(fit.model)^2)
+	   v <- rep(1,n)
+	}
+	if(fit.model$family$family=="poisson"){
+	  phi <- 1
+	  v <- fitted(fit.model)
+	}  
+	if(fit.model$family$family=="binomial"){
+	  phi <- 1
+	  v <- fitted(fit.model)*(1-fitted(fit.model))
+	}
+	ifelse(h>0.9999,0.9999,h)
+	dc <- resid(fit.model,type="response")^2*phi*h/(1-h)^2/v
+ 	if(missingArg(xlab))  xlab="Indice"
+	if(missingArg(ylab))  ylab="Distancia de Cook"
+	if(missingArg(main))  main=" "
+	if(missingArg(pch))   pch=16
+	plot(dc, xlab=xlab, ylab=ylab, main=main, pch=pch)
+	if(!missingArg(identify)) identify(dc, n=identify)	
+}
+
+
