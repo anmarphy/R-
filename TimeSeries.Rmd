@@ -1,0 +1,35 @@
+---
+title: "Time Series"
+author: "Andrea Huerfano"
+date: "September 22, 2019"
+output: pdf_document
+---
+```{r}
+rm(list = ls())
+air<-AirPassengers
+plot(AirPassengers)
+```
+
+```{r}
+plot(decompose(air, type="mult")) 
+```
+```{r}
+#En los datos observados sobresalia que el efecto estacional aumentaba
+#junto con la tendencia por eso s vuelve a colocar en el Holt-Winters
+ap.hw<-HoltWinters(air, seasonal = "mult")
+plot(ap.hw)
+```
+```{r}
+ap.predict <-predict(ap.hw, n.ahead = 4*12) ##4 año,12 Meses
+ts.plot(air,ap.predict,lty=1:2)
+```
+```{r}
+library(forecast)
+AutoArimaModel=auto.arima(air)
+AutoArimaModel ##Modelo propuesto ARIMA(1,1,2)
+
+forecast(AutoArimaModel,48)
+plot(forecast(AutoArimaModel,48))
+
+```
+
